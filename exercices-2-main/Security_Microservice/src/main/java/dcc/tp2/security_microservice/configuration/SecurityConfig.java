@@ -8,6 +8,7 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -52,13 +53,32 @@ public class SecurityConfig {
         return httpSecurity
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf -> csrf.disable())
-                .authorizeRequests(auth -> auth.requestMatchers("/login/**").permitAll())
-                .authorizeRequests(auth -> auth.requestMatchers("/RefreshToken/**").permitAll())
-                .authorizeRequests(auth -> auth.anyRequest().authenticated())
+                .authorizeRequests(auth -> auth
+                        .requestMatchers("/login/**").permitAll()
+                        .requestMatchers("/RefreshToken/**").permitAll()
+
+                        // Autoriser l'accès à la gestion des comptes uniquement pour les ADMIN
+                        .requestMatchers(HttpMethod.POST, "/comptes").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/comptes/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/comptes/**").hasRole("ADMIN")
+
+                        // Autoriser l'accès à la récupération des comptes pour tout utilisateur authentifié
+                        .requestMatchers(HttpMethod.GET, "/comptes/{id}").authenticated()
+
+                        // Autoriser l'accès au crédit et au débit pour tout utilisateur authentifié
+                        .requestMatchers(HttpMethod.POST, "/comptes/{id}/crediter/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/comptes/{id}/debiter/**").authenticated()
+
+                        // Autoriser la récupération de tous les comptes uniquement pour les ADMIN
+                        .requestMatchers(HttpMethod.GET, "/comptes").hasRole("ADMIN")
+
+                        .anyRequest().authenticated()
+                )
                 .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
                 .httpBasic(Customizer.withDefaults())
                 .build();
     }
+
 
     // Signed JWT token
     @Bean

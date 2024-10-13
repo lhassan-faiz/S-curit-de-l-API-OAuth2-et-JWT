@@ -6,6 +6,7 @@ import dcc.tp2.security_microservice.Repository.CompteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -36,4 +37,9 @@ public class CompteService {
         compte.setSolde(compte.getSolde() - montant);
         return compteRepository.save(compte);
     }
+
+    public List<Compte> recupererTousLesComptes() {
+        return compteRepository.findAll();
+    }
+
 }
